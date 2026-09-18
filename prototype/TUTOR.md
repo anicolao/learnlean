@@ -28,14 +28,20 @@ Closing and reopening the file starts a fresh conversation using its contents. T
 
 ## Codex connection
 
-Use your installed **Codex CLI**, already logged in with `codex login`. The bridge runs `codex app-server` and uses your configured model and account. No separate API key is needed for an existing ChatGPT login. The CLI must support ephemeral app-server threads and structured turn output; `codex-cli 0.154.0` was used for live validation. The editor and renderer are pinned by Nix; this adapter deliberately uses your existing Codex executable and configuration.
-
-Optional environment settings:
+The flake supplies **Codex CLI**, pinned by version and content hash in `nix/codex.nix`, and the tutor invokes its absolute Nix-store path. No host `codex` installation or `PATH` entry is needed. Your existing Codex authentication and model configuration are reused. To log in or check authentication with the same packaged executable:
 
 ```sh
-SF_CODEX_BIN=/absolute/path/to/codex nix run . -- course.v
+nix run .#codex -- login
+nix run .#codex -- login status
+```
+
+Codex 0.154.0 is packaged from the upstream native release; the older Rocq/nixpkgs pin remains unchanged. Model selection remains configurable:
+
+```sh
 SF_TUTOR_MODEL=your-model-name nix run . -- course.v
 ```
+
+The package fixes the executable path; `SF_CODEX_BIN` from the host cannot override it. `nix build .#tutor` builds the bridge, and `sf-tutor --check` inside `nix develop` checks the packaged app-server connection without a model request.
 
 To provide an existing book or chapter as a teaching example before starting a conversation:
 
@@ -60,4 +66,4 @@ Tutoring edits support both Rocq and Lean 4. **Graphical documentation previews 
 
 The older design documents explore a larger event-sourced application. This implementation follows the simpler file-only course model: `.v`/`.lean` content plus the system prompt, with disposable runtime state.
 
-`nix flake check` includes offline checks for Unicode edits, ambiguous replacements, full-file/diff context, saved questions and answers, undo, concurrent edits, disk conflicts, cancellation, and Lean routing. Live Codex smoke tests are separate because they require your login and use model inference.
+`nix flake check` includes offline checks for Unicode edits, ambiguous replacements, full-file/diff context, saved questions and answers, undo, concurrent edits, disk conflicts, cancellation, and Lean routing. Checks also initialize the packaged Codex app-server with an empty host PATH. Live Codex smoke tests are separate because they require your login and use model inference.
