@@ -1,0 +1,17 @@
+.DS_Store
+.direnv/
+result
+result-*
+__pycache__/
+*.pyc
+*.swp
+*.swo
+.env
+.env.*
+*.vo
+*.vos
+*.vok
+*.glob
+.*.aux
+.lia.cache
+.nia.cache
