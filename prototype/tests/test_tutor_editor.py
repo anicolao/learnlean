@@ -35,7 +35,7 @@ for line in sys.stdin:
         os.environ['SF_DOC_TEST'] = '1'
         n = pynvim.attach('child', argv=['nvim', '--embed', '--headless', str(file)])
         try:
-            n.exec_lua('vim.notify=function() end; vim.env.PATH=... .. ":" .. vim.env.PATH', str(root))
+            n.exec_lua('vim.notify=function(s) vim.g.tutor_last_notice=s end; vim.env.PATH=... .. ":" .. vim.env.PATH', str(root))
             n.exec_lua('vim.env.TUTOR_TEST_LOG=...', str(root / 'requests'))
             n.command('TutorAsk Teach me about α')
             wait(lambda: 'Tutor: Unicode' in file.read_text())
@@ -64,6 +64,15 @@ for line in sys.stdin:
             n.command('TutorCancel')
             time.sleep(.4)
             assert 'Tutor: Unicode' not in file.read_text()
+            # A failed post-write hook is not a failed save; acknowledge only after
+            # verifying that the reply really reached disk.
+            n.exec_lua("vim.g.tutor_bad_hook=vim.api.nvim_create_autocmd('BufWritePost',{buffer=0,callback=function() if table.concat(vim.api.nvim_buf_get_lines(0,0,-1,false),'\\n'):find('Tutor: Unicode',1,true) then error('synthetic preview failure') end end})")
+            before = (root / 'requests').read_text().count('"commit"')
+            n.command('TutorAsk Test post-save failure')
+            wait(lambda: 'Tutor: Unicode' in file.read_text())
+            wait(lambda: (root / 'requests').read_text().count('"commit"') > before)
+            assert 'Course saved, but a post-save hook failed' in n.vars['tutor_last_notice']
+            n.exec_lua('vim.api.nvim_del_autocmd(vim.g.tutor_bad_hook)')
             # Lean uses native Lean comments, with no extra course files.
             lean = root / 'course.lean'
             n.command('edit ' + str(lean))

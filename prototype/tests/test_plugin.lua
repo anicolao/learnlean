@@ -60,6 +60,11 @@ local function main()
   -- Deleting a block must remove it after debounce without stale extmarks.
   vim.api.nvim_buf_set_lines(buf, 4, 7, false, {})
   assert(vim.wait(2000, function() return #docs.states[buf].blocks == 3 end, 20))
+  -- Dirty previews must be invalidated before deferred cleanup or BufWritePost.
+  local retired = { clear = function() end }
+  docs.states[buf].blocks[1].image = retired
+  vim.api.nvim_buf_set_lines(buf, 0, 1, false, {'Check bool.'})
+  assert(retired.sf_docs_stale, 'on_lines must retire image synchronously')
   -- Lookahead is bounded by source characters, not screen rows or whole files.
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {'visible', string.rep('é', 600), string.rep('x', 500), 'beyond'})
   assert(docs.lookahead_end(buf, 1) == 3, 'lookahead must include ~1k characters, including Unicode')

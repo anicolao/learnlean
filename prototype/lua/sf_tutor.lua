@@ -9,7 +9,17 @@ local function disk_text(path)
   local content = file:read('*a'); file:close(); return content
 end
 local function save(buf)
-  return pcall(api.nvim_buf_call, buf, function() vim.cmd('silent update') end)
+  local ok, err = pcall(api.nvim_buf_call, buf, function() vim.cmd('silent update') end)
+  if not ok then
+    -- BufWritePost can fail after a successful disk write. Verify content before
+    -- reporting failure or acknowledging a tutor reply as the next diff baseline.
+    local read_ok, disk_lines = pcall(vim.fn.readfile, api.nvim_buf_get_name(buf))
+    if read_ok and not vim.bo[buf].modified
+        and vim.deep_equal(disk_lines, api.nvim_buf_get_lines(buf, 0, -1, false)) then
+      return true, err
+    end
+  end
+  return ok, err
 end
 function M.reset(buf)
   buf = buf or api.nvim_get_current_buf()
@@ -43,7 +53,11 @@ local function response(buf, s, result)
     return
   end
   vim.fn.chansend(s.job, vim.json.encode({ op = 'commit', id = result.id }) .. '\n')
-  notify('Updated and saved the course. Use u to undo, then :write to save the undo.')
+  if save_error then
+    notify('Course saved, but a post-save hook failed: ' .. tostring(save_error), vim.log.levels.WARN)
+  else
+    notify('Updated and saved the course. Use u to undo, then :write to save the undo.')
+  end
 end
 local function session(buf)
   if M.sessions[buf] then return M.sessions[buf] end
