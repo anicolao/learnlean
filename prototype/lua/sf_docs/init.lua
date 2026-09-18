@@ -12,7 +12,11 @@ local image_error
 local terminal_is_kitty
 
 local function clear_image(block)
-  if block.image then pcall(function() block.image:clear() end); block.image = nil end
+  if block.image then
+    block.image.sf_docs_stale = true
+    pcall(function() block.image:clear() end)
+    block.image = nil
+  end
 end
 local function clear_images(state)
   for _, b in ipairs(state.blocks) do clear_image(b) end
@@ -333,6 +337,11 @@ function M.attach(buf)
   api.nvim_buf_attach(buf, false, {
     on_lines = function()
       state.dirty = true
+      -- Invalidate synchronously: BufWritePost can render before scheduled cleanup.
+      -- Only set flags here; on_lines runs with textlock held.
+      for _, b in ipairs(state.blocks) do
+        if b.image then b.image.sf_docs_stale = true end
+      end
       timer:stop()
       timer:start(250, 0, vim.schedule_wrap(function() rebuild(buf) end))
       -- Do not let an old rendered image masquerade as current while typing.
