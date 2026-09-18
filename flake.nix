@@ -203,6 +203,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
 
 
         require("sf_docs").setup()
+        require("sf_tutor").setup()
 
         -- Preserve the original checked-proof green even when terminal background
         -- detection resets Neovim's built-in DiffAdd highlight.
@@ -244,6 +245,13 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
                 exec ${renderPython}/bin/python ${./prototype/render.py} "$@"
               '';
             };
+            tutor = pkgs.writeShellApplication {
+              name = "sf-tutor";
+              runtimeInputs = [ renderPython ];
+              text = ''
+                exec ${renderPython}/bin/python ${./prototype}/tutor.py "$@"
+              '';
+            };
             docPlugin = pkgs.vimUtils.buildVimPlugin {
               pname = "sf-docs";
               version = "0.1.0";
@@ -267,7 +275,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
               name = "sf-nvim";
               paths = [ sfNvimBase ];
               nativeBuildInputs = [ pkgs.makeWrapper ];
-              postBuild = "wrapProgram \"$out/bin/nvim\" --prefix PATH : ${lib.makeBinPath [ coq pkgs.git pkgs.ripgrep docRenderer pkgs.imagemagick ]} --set-default ROCQPATH \"${coqPackages.stdlib}/lib/coq/9.0/user-contrib\" --unset COQPATH";
+              postBuild = "wrapProgram \"$out/bin/nvim\" --prefix PATH : ${lib.makeBinPath [ coq pkgs.git pkgs.ripgrep docRenderer tutor pkgs.imagemagick ]} --set-default ROCQPATH \"${coqPackages.stdlib}/lib/coq/9.0/user-contrib\" --unset COQPATH";
             };
           in
           f pkgs coq coqPackages sfNvim docRenderer renderPython
@@ -314,6 +322,8 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
             export HOME="$TMPDIR/home"
             mkdir -p "$HOME"
             export SF_DOC_TEST=1
+            python ${./prototype}/tests/test_tutor.py
+            python ${./prototype}/tests/test_tutor_editor.py
             python ${./prototype/tests/test_renderer.py}
             nvim --headless -c "luafile ${./prototype/tests/test_plugin.lua}"
             touch "$out"
