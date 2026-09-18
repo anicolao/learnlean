@@ -77,4 +77,4 @@ nix flake check --print-build-logs
 
 Checks exercise coqdoc formatting, actual PNG output, cache invalidation and cleanup, parser edge cases, fold behavior, unchanged source bytes, and unsaved edits. The graphical path also received a live Kitty/Neovim smoke test on Apple Silicon macOS: rendered images, opening/editing/closing a comment, updating without saving, resizing, and Coqtail startup/execution. Headless checks do not validate terminal compositing; Linux and Intel macOS remain untested.
 
-The earlier learning-environment documents describe future directions. This prototype does not yet include an LLM tutor, chat, or learner history.
+The prototype now includes a [Codex tutor that writes directly into the course file](TUTOR.md). Use `:TutorAsk` or **Space t a**. Questions, explanations, exercises, and critiques are saved in the `.v` or `.lean` file; the conversation and diff baseline are disposable in-memory state.
