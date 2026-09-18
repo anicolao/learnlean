@@ -58,7 +58,7 @@ def context(source, baseline, request):
 
 class Codex:
     def __init__(self, cwd):
-        self.proc = subprocess.Popen([os.environ.get('SF_CODEX_BIN', 'codex'), 'app-server'],
+        self.proc = subprocess.Popen([os.environ['SF_CODEX_BIN'], 'app-server'],
                                      cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.DEVNULL, text=True, encoding='utf-8')
         self.events = queue.Queue()
@@ -158,6 +158,10 @@ def main():
     signal.signal(signal.SIGTERM, stop)
     try:
         with tempfile.TemporaryDirectory(prefix='sf-tutor-') as tmp:
+            if '--check' in sys.argv[1:]:
+                client = Codex(tmp)
+                print(json.dumps({'ready': True, 'codex': os.environ['SF_CODEX_BIN']}), flush=True)
+                return
             thread, baseline, pending = None, None, None
             for line in sys.stdin:
                 request = {}

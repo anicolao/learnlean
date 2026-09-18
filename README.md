@@ -10,7 +10,7 @@ nix run . -- lf/Basics.v
 
 This runs in your current Kitty terminal or tmux pane. Use `zo` to edit documentation, `zc` to collapse it, and `Space c j` to check the next Rocq sentence. See the [prototype guide](prototype/README.md) for setup, controls, implementation, and limitations. Validate with `nix flake check`.
 
-Use **Space t a** or `:TutorAsk` to ask the tutor for explanations, exercises, or critiques. It edits and saves the current `.v` or `.lean` file using your existing Codex CLI login. See the [tutor guide](prototype/TUTOR.md). Graphical previews and prover integration currently support Rocq.
+Use **Space t a** or `:TutorAsk` to ask the tutor for explanations, exercises, or critiques. It edits and saves the current `.v` or `.lean` file using the Nix-packaged Codex CLI and your existing login. See the [tutor guide](prototype/TUTOR.md). Graphical previews and prover integration currently support Rocq.
 
 The broader learning environment below remains an earlier design proposal. The implemented tutor uses the proof file as the sole durable course record, with no additional session metadata.
 

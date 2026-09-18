@@ -227,7 +227,10 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
         lib.genAttrs systems (
           system:
           let
-            pkgs = import nixpkgs { inherit system; };
+            pkgs = import nixpkgs {
+              inherit system;
+              overlays = [ (final: prev: { codex = final.callPackage ./nix/codex.nix {}; }) ];
+            };
             coq = if pkgs ? coq_9_0 then pkgs.coq_9_0 else pkgs.coq;
             coqPackages =
               if pkgs ? coqPackages_9_0 then
@@ -247,8 +250,9 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
             };
             tutor = pkgs.writeShellApplication {
               name = "sf-tutor";
-              runtimeInputs = [ renderPython ];
+              runtimeInputs = [ renderPython pkgs.codex ];
               text = ''
+                export SF_CODEX_BIN="${pkgs.codex}/bin/codex"
                 exec ${renderPython}/bin/python ${./prototype}/tutor.py "$@"
               '';
             };
@@ -275,25 +279,27 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
               name = "sf-nvim";
               paths = [ sfNvimBase ];
               nativeBuildInputs = [ pkgs.makeWrapper ];
-              postBuild = "wrapProgram \"$out/bin/nvim\" --prefix PATH : ${lib.makeBinPath [ coq pkgs.git pkgs.ripgrep docRenderer tutor pkgs.imagemagick ]} --set-default ROCQPATH \"${coqPackages.stdlib}/lib/coq/9.0/user-contrib\" --unset COQPATH";
+              postBuild = "wrapProgram \"$out/bin/nvim\" --prefix PATH : ${lib.makeBinPath [ coq pkgs.git pkgs.ripgrep docRenderer tutor pkgs.imagemagick pkgs.tmux ]} --set-default ROCQPATH \"${coqPackages.stdlib}/lib/coq/9.0/user-contrib\" --unset COQPATH";
             };
           in
-          f pkgs coq coqPackages sfNvim docRenderer renderPython
+          f pkgs coq coqPackages sfNvim docRenderer renderPython tutor
         );
     in
     {
       packages = forAllSystems (
-        pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython:
+        pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
           default = sfNvim;
           nvim = sfNvim;
           renderer = docRenderer;
+          codex = pkgs.codex;
+          tutor = tutor;
           test-python = renderPython;
         }
       );
 
       apps = forAllSystems (
-        pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython:
+        pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
           kitty = {
             type = "app";
@@ -306,6 +312,10 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
             type = "app";
             program = "${sfNvim}/bin/nvim";
           };
+          codex = {
+            type = "app";
+            program = "${pkgs.codex}/bin/codex";
+          };
           nvim = {
             type = "app";
             program = "${sfNvim}/bin/nvim";
@@ -314,7 +324,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
       );
 
       checks = forAllSystems (
-        pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython:
+        pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
           documentation = pkgs.runCommand "sf-documentation-tests" {
             nativeBuildInputs = [ sfNvim docRenderer renderPython coq ];
@@ -322,6 +332,8 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
             export HOME="$TMPDIR/home"
             mkdir -p "$HOME"
             export SF_DOC_TEST=1
+            # Deliberately remove every host executable and override attempt.
+            env PATH=/nonexistent SF_CODEX_BIN=/nonexistent/codex ${tutor}/bin/sf-tutor --check
             python ${./prototype}/tests/test_tutor.py
             python ${./prototype}/tests/test_tutor_editor.py
             python ${./prototype/tests/test_renderer.py}
@@ -332,15 +344,18 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
       );
 
       devShells = forAllSystems (
-        pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython:
+        pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
           default = pkgs.mkShell {
             packages =
               [
                 sfNvim
                 docRenderer
+                tutor
                 renderPython
+                pkgs.codex
                 pkgs.kitty
+                pkgs.tmux
                 coq
                 coqPackages.stdlib
                 pkgs.ocaml
