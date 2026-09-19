@@ -65,6 +65,22 @@ local function main()
   docs.states[buf].blocks[1].image = retired
   vim.api.nvim_buf_set_lines(buf, 0, 1, false, {'Check bool.'})
   assert(retired.sf_docs_stale, 'on_lines must retire image synchronously')
+  -- Typing must not trigger the debounce rescan or clear an existing preview.
+  vim.wait(300, function() return false end)
+  local state = docs.states[buf]
+  local frozen = { clear = function(self) self.cleared = true end }
+  state.blocks[1].image = frozen
+  vim.cmd('doautocmd InsertEnter')
+  assert(docs.editing and frozen.sf_docs_paused)
+  local tick = state.tick
+  vim.api.nvim_buf_set_lines(buf, 0, 1, false, {'Check nat.'})
+  docs.refresh()
+  vim.wait(400, function() return false end)
+  assert(state.tick == tick and state.dirty, 'preview rescan must wait for InsertLeave')
+  assert(not frozen.cleared, 'typing must preserve the preview frame and padding')
+  vim.cmd('doautocmd InsertLeave')
+  assert(not docs.editing and frozen.cleared)
+  assert(state.tick == vim.api.nvim_buf_get_changedtick(buf) and not state.dirty)
   -- Lookahead is bounded by source characters, not screen rows or whole files.
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {'visible', string.rep('é', 600), string.rep('x', 500), 'beyond'})
   assert(docs.lookahead_end(buf, 1) == 3, 'lookahead must include ~1k characters, including Unicode')
