@@ -1,9 +1,13 @@
 --- a/lua/image/image.lua
 +++ b/lua/image/image.lua
-@@ -49,6 +49,16 @@
+@@ -49,6 +49,20 @@
    if not self.global_state.enabled then return end
  
    if geometry then self.geometry = vim.tbl_deep_extend("force", self.geometry, geometry) end
++
++  -- Keep the existing frame and padding during source editing.
++  -- sf-docs rebuilds dirty previews when Insert mode ends.
++  if self.sf_docs_paused then return end
 +
 +  -- Buffer replacement can move extmarks to EOF before the preview rescan runs.
 +  -- Retired previews must never render through BufWritePost or other callbacks.
@@ -17,7 +21,7 @@
  
    -- don't render if we are in the conmmand-line-window, in this case previously rendered images can
    -- be left in place
-@@ -98,16 +108,16 @@
+@@ -98,16 +112,16 @@
    end
  
    -- virtual padding
@@ -37,7 +41,7 @@
        local total_height = height + (self.render_offset_top or 0)
        local has_up_to_date_extmark = previous_extmark and previous_extmark.height == total_height
  
-@@ -122,7 +132,7 @@
+@@ -122,7 +136,7 @@
          local extmark_opts = { id = self.internal_id, strict = false }
          if self.with_virtual_padding then
            -- only reserve real height for the extmark, padding is applied during rendering
@@ -46,7 +50,7 @@
            for _ = 0, total_lines - 1 do
              filler[#filler + 1] = { { " ", "" } }
            end
-@@ -178,7 +188,7 @@
+@@ -178,7 +192,7 @@
  
    -- All virtual padding images will have inline == true. And an image only gets one extmark, so
    -- this will correctly cleanup all extmarks

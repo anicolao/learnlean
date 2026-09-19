@@ -1,4 +1,4 @@
-local M = { states = {} }
+local M = { states = {}, editing = false }
 local api = vim.api
 local parser = require('sf_docs.parser')
 local ns = api.nvim_create_namespace('sf_docs_headers')
@@ -128,6 +128,7 @@ end
 local function rebuild(buf)
   local state = M.states[buf]
   if not enabled or not state or not api.nvim_buf_is_valid(buf) then return end
+  if M.editing then state.dirty = true; return end
   local old_at, old_source = {}, {}
   for _, b in ipairs(state.blocks) do
     local pos = b.anchor and api.nvim_buf_get_extmark_by_id(buf, anchors, b.anchor, {}) or {}
@@ -225,7 +226,7 @@ function M.lookahead_end(buf, bottom)
 end
 
 function M.refresh()
-  if not enabled then return end
+  if not enabled or M.editing then return end
   local graphical = graphics_ready()
   for buf, state in pairs(M.states) do
     local win = source_window(buf)
@@ -343,9 +344,10 @@ function M.attach(buf)
         if b.image then b.image.sf_docs_stale = true end
       end
       timer:stop()
+      if M.editing then return end
       timer:start(250, 0, vim.schedule_wrap(function() rebuild(buf) end))
       -- Do not let an old rendered image masquerade as current while typing.
-      vim.schedule(function() clear_images(state) end)
+      vim.schedule(function() if not M.editing then clear_images(state) end end)
     end,
     on_detach = function()
       timer:stop(); timer:close(); clear_images(state); M.states[buf] = nil
@@ -392,12 +394,29 @@ function M.setup()
   _G.SFDocsFoldExpr = M.foldexpr
   _G.SFDocsFoldText = M.foldtext
   api.nvim_create_autocmd('FileType', { pattern = 'coq', callback = function(a) M.attach(a.buf) end })
-  api.nvim_create_autocmd({ 'WinScrolled', 'WinResized', 'BufWinEnter', 'CursorMoved', 'InsertLeave' }, {
+  api.nvim_create_autocmd({ 'WinScrolled', 'WinResized', 'BufWinEnter', 'CursorMoved' }, {
     callback = schedule_refresh,
   })
   api.nvim_create_autocmd('InsertEnter', { callback = function()
     local b, state = block_at_cursor()
     if b and state.compact and not b.open then M.toggle('open') end
+    M.editing = true
+    for _, s in pairs(M.states) do
+      s.timer:stop()
+      for _, block in ipairs(s.blocks) do
+        if block.image then block.image.sf_docs_paused = true end
+      end
+    end
+  end })
+  api.nvim_create_autocmd('InsertLeave', { callback = function()
+    M.editing = false
+    for buf, state in pairs(M.states) do
+      for _, block in ipairs(state.blocks) do
+        if block.image then block.image.sf_docs_paused = false end
+      end
+      if state.dirty then rebuild(buf) end
+    end
+    schedule_refresh()
   end })
   api.nvim_create_autocmd('OptionSet', { pattern = 'background', callback = schedule_refresh })
   api.nvim_create_autocmd('ColorScheme', { callback = schedule_refresh })
