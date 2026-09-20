@@ -301,6 +301,12 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
       apps = forAllSystems (
         pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
+          clear-previews = {
+            type = "app";
+            program = "${pkgs.writeShellScript "sf-clear-previews" ''
+              exec ${pkgs.python3}/bin/python ${./prototype/clear_previews.py}
+            ''}";
+          };
           kitty = {
             type = "app";
             program = "${pkgs.writeShellScript "sf-kitty" ''
@@ -338,6 +344,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
             python ${./prototype}/tests/test_tutor_editor.py
             python ${./prototype/tests/test_renderer.py}
             nvim --headless -c "luafile ${./prototype/tests/test_plugin.lua}"
+            nvim --headless -c "luafile ${./prototype/tests/test_kitty_transport.lua}"
             touch "$out"
           '';
         }
