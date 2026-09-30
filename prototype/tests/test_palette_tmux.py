@@ -7,7 +7,7 @@ nvim=os.environ.get('SF_TEST_NVIM') or shutil.which('nvim')
 workdir=tempfile.TemporaryDirectory(prefix='sf-palette-')
 base=workdir.name+'/live'
 pathlib.Path(base+'.conf').write_text('set -g allow-passthrough all\nset -g focus-events off\nset -g default-terminal tmux-256color\nset -g terminal-features "xterm-256color:256"\nset -as terminal-overrides ",*:RGB@:Tc@:setrgbf@:setrgbb@"\n')
-pathlib.Path(base+'.v').write_text(''.join(f'(** * Section {i}\n\nSome [nat] explanation with _emphasis_.\n*)\nCheck nat.\n\n' for i in range(40)))
+pathlib.Path(base+'.v').write_text(''.join(f'(** Ordinary paragraph {i} with tall letters ÁÉ\n\nSome [nat] explanation with _emphasis_.\n*)\nCheck nat.\n\n' for i in range(40)))
 env=dict(os.environ)
 for key in ['TMUX','TMUX_PANE','SF_DOC_TEST']:env.pop(key,None)
 tmux=[shutil.which('tmux'),'-L','sf-palette-'+str(os.getpid())]
@@ -41,8 +41,20 @@ try:
  subprocess.run([*tmux,'last-pane'],check=True)
  v.command('normal! 1Gzt');time.sleep(1)
  # Actual pane text contains the placeholder characters; a separate window does not.
- cells=subprocess.check_output([*tmux,'capture-pane','-e','-p','-t','test:0.0'])
+ for _ in range(100):
+  cells=subprocess.check_output([*tmux,'capture-pane','-e','-p','-t','test:0.0'])
+  if '\U0010eeee'.encode() in cells:break
+  time.sleep(.1)
  assert '\U0010eeee'.encode() in cells
+ # Row zero shares the source anchor with the header concealment. A blank
+ # header overlay used to erase its leftmost cells and clip paragraph tops.
+ first_rows=[]
+ for line in cells.decode('utf-8').splitlines():
+  found=re.findall('\U0010eeee(.)(.)',line)
+  if found:first_rows.append([(diacritics.index(r),diacritics.index(c)) for r,c in found])
+ assert first_rows[0][0]==(0,0), 'First image row starts cropped'
+ assert first_rows[1][0]==(1,0)
+ assert [c for _,c in first_rows[0]]==[c for _,c in first_rows[1]], 'Header erased row-zero cells'
  other=subprocess.check_output([*tmux,'capture-pane','-p','-t','test:1.0'])
  assert '\U0010eeee'.encode() not in other
  original=v.current.buffer[:]

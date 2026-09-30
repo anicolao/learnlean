@@ -207,8 +207,12 @@ local function paint_headers(buf, state)
       if not image_api then label = label .. '  [preview: Kitty required]' end
       local raw = api.nvim_buf_get_lines(buf, b.first - 1, b.first, false)[1] or ''
       label = label .. string.rep(' ', math.max(0, vim.fn.strdisplaywidth(raw) - vim.fn.strdisplaywidth(label)))
+      -- Placeholder row zero already replaces this source line. A second overlay
+      -- of blank label text can erase its cells even with a lower priority.
+      local placeholder = state.compact and b.image and b.image.is_rendered
+        and image_api and image_api.mode == 'placeholders'
       api.nvim_buf_set_extmark(buf, ns, b.first - 1, 0, {
-        virt_text = { { label, 'Title' } }, virt_text_pos = 'overlay', hl_mode = 'replace',
+        virt_text = not placeholder and { { label, 'Title' } } or nil, virt_text_pos = 'overlay', hl_mode = 'replace',
         sign_text = state.compact and '▸' or nil, sign_hl_group = 'Title',
         end_row = b.first - 1, end_col = #raw,
         conceal = state.compact and b.image and '' or nil,
