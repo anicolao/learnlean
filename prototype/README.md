@@ -111,17 +111,26 @@ SF_DOC_GRAPHICS=placeholders nix run . -- lf/Basics.v
 SF_DOC_GRAPHICS=overlay nix run . -- lf/Basics.v
 ```
 
-This experimental mode enables truecolor to encode image IDs; tmux must preserve
-RGB colors (Kitty clients normally advertise this). The existing palette-only
-syntax theme may look different in truecolor; the green proof highlight retains
-its RGB definition. No tmux settings are changed. Normal overlay mode remains the
-default outside tmux. After attaching a different terminal to an existing session,
-use `:SFDocsRefresh` to upload images to that terminal.
+Placeholder IDs use an indexed foreground color plus a combining character for
+the high byte. This mode uses `notermguicolors`: it needs only the terminal's
+256-color palette, not RGB support. Palette values are never changed, so syntax
+colors and the green proof highlight keep using your terminal theme. No tmux
+settings are changed. Normal overlay mode remains the default outside tmux.
+After attaching a different terminal to an existing session, use `:SFDocsRefresh`
+to upload images to that terminal.
 
 Old overlays are independent of the new placeholders: exit the old editor and
 run `nix run .#clear-previews` once before trying this mode if any remain.
 
 Validation includes headless checks for source preservation, long-comment tiling,
-editing pauses, and image cleanup, plus a live Kitty/tmux protocol check with
-focus events off, scrolling, window switching, and pane splitting. Display capture
+editing pauses, palette-ID wraparound, and image cleanup. The opt-in live test
+disables tmux RGB capabilities and verifies that the actual indexed colors and
+combining characters received by Kitty reconstruct the uploaded image IDs. It also
+exercises scrolling, window switching, pane splitting, editing, and undo:
+
+```sh
+nix develop --command python prototype/tests/test_palette_tmux.py
+```
+
+Display capture
 was unavailable, so visual appearance still needs manual review.

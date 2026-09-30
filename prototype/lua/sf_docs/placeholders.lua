@@ -5,18 +5,30 @@ local api = vim.api
 local ns = api.nvim_create_namespace('sf_docs_placeholders')
 local codes = require('image/backends/kitty/codes')
 local images = {}
-local serial = tonumber(vim.fn.sha256(tostring(vim.uv.hrtime()) .. ':' .. vim.fn.getpid()):sub(1, 8), 16)
+-- Indexed foregrounds carry only the low byte; the third combining character
+-- carries bits 24..31. Bits 8..23 must be zero, not a quantized RGB value.
+-- Skip ANSI slots 0..15 so bold/bright-color remapping cannot change the ID.
+local slots = 240 * 256
+local serial = tonumber(vim.fn.sha256(tostring(vim.uv.hrtime()) .. ':' .. vim.fn.getpid()):sub(1, 8), 16) % slots
+local allocated = {}
 local function next_id()
-  serial = (serial % 4294967295) + 1
-  return serial
+  for _ = 1, slots do
+    serial = (serial + 1) % slots
+    local id = math.floor(serial / 240) * 16777216 + 16 + serial % 240
+    if not allocated[id] then allocated[id] = true; return id end
+  end
+  error('Kitty palette preview IDs exhausted')
+end
+local function highlight(tile)
+  api.nvim_set_hl(0, tile.hl, {ctermfg=tile.id % 256, nocombine=true})
 end
 local function send(fields, path)
   require('image/backends/kitty/helpers').write_graphics(fields, path)
 end
 
 function M.setup()
-  -- The placeholder's RGB foreground encodes the image ID exactly.
-  vim.o.termguicolors = true
+  -- Preserve the terminal palette used by the course's syntax/proof theme.
+  vim.o.termguicolors = false
   api.nvim_create_autocmd('VimLeavePre', { callback = function()
     for img in pairs(images) do img:clear() end
   end })
@@ -34,6 +46,7 @@ function M.from_file(path, opts)
     for _, tile in ipairs(self.tiles) do
       send({action='d', display_delete='I', image_id=tile.id, quiet=2})
       api.nvim_set_hl(0, tile.hl, {})
+      allocated[tile.id] = nil
     end
     self.tiles = {}
     self.is_rendered = false
@@ -44,7 +57,7 @@ function M.from_file(path, opts)
     if self.sf_docs_stale or not api.nvim_buf_is_valid(self.buffer)
       or self.geometry.y >= api.nvim_buf_line_count(self.buffer) then self:clear(); return end
     if self.is_rendered then
-      for _, tile in ipairs(self.tiles) do api.nvim_set_hl(0, tile.hl, {fg=tile.id % 16777216, nocombine=true}) end
+      for _, tile in ipairs(self.tiles) do highlight(tile) end
       return
     end
     local height = self.sf_docs_prefetch_height
@@ -60,7 +73,7 @@ function M.from_file(path, opts)
       local tile = { id=id, hl=hl }
       self.tiles[#self.tiles + 1] = tile
       images[self] = true
-      api.nvim_set_hl(0, hl, {fg=id % 16777216, nocombine=true})
+      highlight(tile)
       local top = math.floor(start * opts.pixel_height / height)
       local bottom = math.floor((start + count) * opts.pixel_height / height)
       send({action='T', transmit_format=100, transmit_medium='f', image_id=id,
