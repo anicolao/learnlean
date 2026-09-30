@@ -88,3 +88,40 @@ nix run .#clear-previews
 ```
 
 This sends Kitty's explicit image-delete command through tmux when applicable. It clears visible graphics in the enclosing terminal (including graphics in other tmux panes), not file content. A normal shell `clear` inside tmux may only redraw text. The updated renderer flushes graphics commands in order and explicitly deletes its owned image IDs, including hidden images, on exit.
+
+
+## Trying text-anchored previews in tmux
+
+Inside tmux, previews now use Kitty Unicode placeholders in Neovim virtual text
+and virtual lines. Neovim draws the cells and tmux scrolls/clips/hides them like
+text; Kitty supplies the image pixels. No placeholder characters are saved in
+course files. Opening comments and the Insert-mode pause work as before.
+
+Restart with the usual command:
+
+```sh
+nix run . -- lf/Basics.v
+```
+
+`:SFDocsHealth` reports `mode = "placeholders"`. To compare either backend
+explicitly (also works outside tmux):
+
+```sh
+SF_DOC_GRAPHICS=placeholders nix run . -- lf/Basics.v
+SF_DOC_GRAPHICS=overlay nix run . -- lf/Basics.v
+```
+
+This experimental mode enables truecolor to encode image IDs; tmux must preserve
+RGB colors (Kitty clients normally advertise this). The existing palette-only
+syntax theme may look different in truecolor; the green proof highlight retains
+its RGB definition. No tmux settings are changed. Normal overlay mode remains the
+default outside tmux. After attaching a different terminal to an existing session,
+use `:SFDocsRefresh` to upload images to that terminal.
+
+Old overlays are independent of the new placeholders: exit the old editor and
+run `nix run .#clear-previews` once before trying this mode if any remain.
+
+Validation includes headless checks for source preservation, long-comment tiling,
+editing pauses, and image cleanup, plus a live Kitty/tmux protocol check with
+focus events off, scrolling, window switching, and pane splitting. Display capture
+was unavailable, so visual appearance still needs manual review.

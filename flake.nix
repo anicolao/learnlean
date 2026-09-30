@@ -345,6 +345,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
             python ${./prototype/tests/test_renderer.py}
             nvim --headless -c "luafile ${./prototype/tests/test_plugin.lua}"
             nvim --headless -c "luafile ${./prototype/tests/test_kitty_transport.lua}"
+            nvim --headless -c "luafile ${./prototype/tests/test_placeholders.lua}"
             touch "$out"
           '';
         }

@@ -97,6 +97,12 @@ local function graphics_ready()
   end
   if not terminal_is_kitty then return false end
   local ok, result = pcall(function()
+    local mode = vim.env.SF_DOC_GRAPHICS or (vim.env.TMUX and 'placeholders' or 'overlay')
+    if mode == 'placeholders' then
+      local img = require('sf_docs.placeholders')
+      img.setup()
+      return img
+    end
     local img = require('image')
     img.setup({
       backend = 'kitty', processor = 'magick_cli',
@@ -238,6 +244,9 @@ function M.refresh()
         local size = require('image.utils.term').get_size()
         if size and size.cell_width > 0 and size.cell_height > 0 then
           local columns = math.max(1, math.floor(math.max(20, info.width - info.textoff - 2) * 0.9))
+          if image_api.mode == 'placeholders' then
+            columns = math.min(columns, #require('image/backends/kitty/codes').diacritics)
+          end
           local pixels = math.floor(columns * size.cell_width)
           local lookahead = M.lookahead_end(buf, info.botline)
           for _, b in ipairs(state.blocks) do
@@ -258,7 +267,7 @@ function M.refresh()
                   local ok, img = pcall(image_api.from_file, result.path, {
                     id = ('sf-doc-%d-%d'):format(buf, b.anchor), window = win, buffer = buf,
                     x = 0, y = row - 1, width = columns,
-                    with_virtual_padding = true, inline = true,
+                    with_virtual_padding = true, inline = true, pixel_height = result.height,
                   })
                   if ok then
                     img.sf_docs_replace_line = state.compact and not b.open and b.standalone
@@ -382,6 +391,7 @@ end
 
 function M.health()
   local result = {
+    mode = image_api and (image_api.mode or 'overlay'),
     graphics = image_api ~= nil, kitty = vim.env.KITTY_WINDOW_ID ~= nil,
     worker = worker, pending = waiting, error = image_error,
     renderer = vim.fn.exepath('sf-doc-render'),
