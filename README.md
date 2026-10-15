@@ -69,3 +69,13 @@ The Neovim-first direction is now being explored through the Rocq prototype. Tha
 ## Inspiration
 
 The nearby [MathPub agentic vision](../mathpub/AGENTIC_VISION.md) and [workspace design](../mathpub/GUI_DESIGN.md) inspire a conversation that operates real tools alongside a live visual view. Its [component model](../mathpub/COMPONENT_LEXICON_DESIGN.md) suggests reusable teaching materials with stable identities. These are local reference links, not runtime dependencies. Software Foundations remains a pedagogical influence, rather than the organizing interface.
+
+
+## License
+
+The original code and documentation in this project are licensed under the
+[GNU General Public License, version 3](LICENSE) (SPDX: `GPL-3.0-only`).
+
+Copied third-party materials retain their existing licenses and notices,
+including [Software Foundations LF](lf/LICENSE), the bundled fonts, and jQuery UI.
+The root license does not replace those notices.
