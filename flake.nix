@@ -266,7 +266,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
               plugins = [
                 { plugin = pkgs.vimPlugins.Coqtail; }
                 { plugin = pkgs.vimPlugins.image-nvim.overrideAttrs (old: {
-                    patches = (old.patches or []) ++ [ ./prototype/image-inline-anchor.patch ];
+                    patches = (old.patches or []) ++ [ ./prototype/kitty-transport.patch ];
                   }); }
                 { plugin = docPlugin; }
                 
@@ -346,6 +346,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
             nvim --headless -c "luafile ${./prototype/tests/test_plugin.lua}"
             nvim --headless -c "luafile ${./prototype/tests/test_kitty_transport.lua}"
             nvim --headless -c "luafile ${./prototype/tests/test_placeholders.lua}"
+            nvim --headless -c "luafile ${./prototype/tests/test_renderer_selection.lua}"
             touch "$out"
           '';
         }
