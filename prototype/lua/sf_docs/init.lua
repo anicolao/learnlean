@@ -97,22 +97,8 @@ local function graphics_ready()
   end
   if not terminal_is_kitty then return false end
   local ok, result = pcall(function()
-    local mode = vim.env.SF_DOC_GRAPHICS or (vim.env.TMUX and 'placeholders' or 'overlay')
-    if mode == 'placeholders' then
-      local img = require('sf_docs.placeholders')
-      img.setup()
-      return img
-    end
-    local img = require('image')
-    img.setup({
-      backend = 'kitty', processor = 'magick_cli',
-      integrations = { markdown = { enabled = false }, neorg = { enabled = false } },
-      max_width = nil, max_height = nil,
-      max_width_window_percentage = 100, max_height_window_percentage = 100000,
-      window_overlap_clear_enabled = true,
-      editor_only_render_when_focused = true,
-      tmux_show_only_in_active_window = true,
-    })
+    local img = require('sf_docs.placeholders')
+    img.setup()
     return img
   end)
   if not ok then image_error = tostring(result); return false end
@@ -395,7 +381,7 @@ end
 
 function M.health()
   local result = {
-    mode = image_api and (image_api.mode or 'overlay'),
+    mode = image_api and image_api.mode,
     graphics = image_api ~= nil, kitty = vim.env.KITTY_WINDOW_ID ~= nil,
     worker = worker, pending = waiting, error = image_error,
     renderer = vim.fn.exepath('sf-doc-render'),

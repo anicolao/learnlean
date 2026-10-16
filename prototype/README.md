@@ -90,9 +90,9 @@ nix run .#clear-previews
 This sends Kitty's explicit image-delete command through tmux when applicable. It clears visible graphics in the enclosing terminal (including graphics in other tmux panes), not file content. A normal shell `clear` inside tmux may only redraw text. The updated renderer flushes graphics commands in order and explicitly deletes its owned image IDs, including hidden images, on exit.
 
 
-## Trying text-anchored previews in tmux
+## Text-anchored previews
 
-Inside tmux, previews now use Kitty Unicode placeholders in Neovim virtual text
+All graphical previews use Kitty Unicode placeholders in Neovim virtual text
 and virtual lines. Neovim draws the cells and tmux scrolls/clips/hides them like
 text; Kitty supplies the image pixels. No placeholder characters are saved in
 course files. Opening comments and the Insert-mode pause work as before.
@@ -103,19 +103,15 @@ Restart with the usual command:
 nix run . -- lf/Basics.v
 ```
 
-`:SFDocsHealth` reports `mode = "placeholders"`. To compare either backend
-explicitly (also works outside tmux):
-
-```sh
-SF_DOC_GRAPHICS=placeholders nix run . -- lf/Basics.v
-SF_DOC_GRAPHICS=overlay nix run . -- lf/Basics.v
-```
+`:SFDocsHealth` reports `mode = "placeholders"`, both in tmux and in the
+standalone Kitty launcher. This is the only supported graphical renderer;
+`SF_DOC_GRAPHICS` no longer selects a backend.
 
 Placeholder IDs use an indexed foreground color plus a combining character for
 the high byte. This mode uses `notermguicolors`: it needs only the terminal's
 256-color palette, not RGB support. Palette values are never changed, so syntax
 colors and the green proof highlight keep using your terminal theme. No tmux
-settings are changed. Normal overlay mode remains the default outside tmux.
+settings are changed.
 After attaching a different terminal to an existing session, use `:SFDocsRefresh`
 to upload images to that terminal.
 
