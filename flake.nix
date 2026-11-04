@@ -290,8 +290,9 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
         pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
           lean = (import ./nix/lean-trial.nix { inherit pkgs; }).launcher;
-          default = sfNvim;
-          nvim = sfNvim;
+          default = import ./nix/launcher.nix { inherit pkgs; rocq = sfNvim; };
+          nvim = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+          rocq = sfNvim;
           renderer = docRenderer;
           codex = pkgs.codex;
           tutor = tutor;
@@ -323,12 +324,12 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
             type = "app";
             program = "${pkgs.writeShellScript "sf-kitty" ''
               unset TMUX TMUX_PANE
-              exec ${pkgs.kitty}/bin/kitty --title "Logical Foundations" ${sfNvim}/bin/nvim "$@"
+              exec ${pkgs.kitty}/bin/kitty --title "LearnLean" ${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/nvim "$@"
             ''}";
           };
           default = {
             type = "app";
-            program = "${sfNvim}/bin/nvim";
+            program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/nvim";
           };
           codex = {
             type = "app";
@@ -336,7 +337,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
           };
           nvim = {
             type = "app";
-            program = "${sfNvim}/bin/nvim";
+            program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/nvim";
           };
         }
       );
@@ -344,6 +345,12 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
       checks = forAllSystems (
         pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
+          launcher = pkgs.runCommand "learnlean-launcher-check" {
+            nativeBuildInputs = [ pkgs.python3 ];
+          } ''
+            SF_TEST_EDITOR=${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/nvim python ${./prototype}/tests/test_launcher.py
+            touch "$out"
+          '';
           lean = (import ./nix/lean-trial.nix { inherit pkgs; }).check;
           documentation = pkgs.runCommand "sf-documentation-tests" {
             nativeBuildInputs = [ sfNvim docRenderer renderPython coq ];
@@ -371,7 +378,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
           default = pkgs.mkShell {
             packages =
               [
-                sfNvim
+                self.packages.${pkgs.stdenv.hostPlatform.system}.default
                 docRenderer
                 tutor
                 renderPython
