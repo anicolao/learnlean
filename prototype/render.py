@@ -13,6 +13,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import textwrap
 
 from PIL import Image
 from weasyprint import HTML, CSS
@@ -28,7 +29,7 @@ p { margin: .3em 0 .8em; }
 a { text-decoration: none; }
 pre, code, .inlinecode, .code { font-family: 'DejaVu Sans Mono', monospace; }
 
-.code { white-space: pre-wrap; padding: 8px; }
+pre, .code { white-space: pre-wrap; padding: 8px; }
 ul, ol { padding-left: 1.7em; }
 li { margin-bottom: .35em; }
 img { max-width: 100%; }
@@ -49,6 +50,9 @@ class Renderer:
 
     def render(self, request: dict) -> dict:
         source = request['source']
+        language = request.get('language', 'coq')
+        if language not in ('coq', 'lean'):
+            raise ValueError('language must be coq or lean')
         width = max(160, min(4096, int(request.get('width', 800))))
         font_size = max(10, min(48, float(request.get('font_size', 18))))
         theme = request.get('theme', 'light')
@@ -57,21 +61,28 @@ class Renderer:
         base = str(Path(request.get('base', '.')).resolve())
         # Include the current file's printing directives, which coqdoc uses for symbols.
         preamble = request.get('preamble', '')
-        key = hashlib.sha256(json.dumps([source, width, font_size, base, preamble, theme]).encode()).hexdigest()
+        key = hashlib.sha256(json.dumps([source, language, width, font_size, base, preamble, theme]).encode()).hexdigest()
         if key in self.cache:
             return dict(self.cache[key], cached=True)
         folder = self.root / key
         folder.mkdir()
-        vfile = folder / 'Documentation.v'
-        vfile.write_text(preamble + '\n' + source + '\n', encoding='utf-8')
-        result = subprocess.run(
-            ['coqdoc', '--html', '--body-only', '--no-index', '--no-glob', '--utf8', '--stdout', str(vfile)],
-            capture_output=True, text=True, timeout=20, cwd=folder,
-        )
-        if result.returncode:
-            raise RuntimeError(result.stderr.strip() or 'coqdoc failed')
-        # coqdoc surrounds comments with empty code regions, including <br/>.
-        markup = re.sub(r'<div class="code">(?:\s|<br\s*/?>)*</div>', '', result.stdout)
+        if language == 'lean':
+            from markdown_it import MarkdownIt
+            if not source.startswith(('/-!', '/--')) or not source.endswith('-/'):
+                raise ValueError('Expected a complete Lean documentation comment')
+            prose = textwrap.dedent(source[3:-2]).strip()
+            markup = MarkdownIt('commonmark', {'html': False}).render(prose)
+        else:
+            vfile = folder / 'Documentation.v'
+            vfile.write_text(preamble + '\n' + source + '\n', encoding='utf-8')
+            result = subprocess.run(
+                ['coqdoc', '--html', '--body-only', '--no-index', '--no-glob', '--utf8', '--stdout', str(vfile)],
+                capture_output=True, text=True, timeout=20, cwd=folder,
+            )
+            if result.returncode:
+                raise RuntimeError(result.stderr.strip() or 'coqdoc failed')
+            # coqdoc surrounds comments with empty code regions, including <br/>.
+            markup = re.sub(r'<div class="code">(?:\s|<br\s*/?>)*</div>', '', result.stdout)
         foreground, heading, link, code = PALETTES[theme]
         css = CSS_BASE + f'''
 body {{ font-size: {font_size}px; color: {foreground}; }}

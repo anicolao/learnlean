@@ -130,3 +130,8 @@ nix develop --command python prototype/tests/test_palette_tmux.py
 
 Display capture
 was unavailable, so visual appearance still needs manual review.
+
+
+The [Lean launcher](../lean-trial/README.md) also uses these previews for
+`/-! ... -/` and `/-- ... -/` documentation, rendered as Markdown. It retains the
+standard `lean.nvim` Infoview and does not enable the tutor.

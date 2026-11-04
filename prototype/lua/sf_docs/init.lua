@@ -131,7 +131,8 @@ local function rebuild(buf)
   api.nvim_buf_clear_namespace(buf, ns, 0, -1)
   api.nvim_buf_clear_namespace(buf, anchors, 0, -1)
   state.compact = graphics_ready()
-  state.blocks, state.separators = parser.scan(api.nvim_buf_get_lines(buf, 0, -1, false))
+  local scanner = state.language == 'lean' and require('sf_docs.lean_parser') or parser
+  state.blocks, state.separators = scanner.scan(api.nvim_buf_get_lines(buf, 0, -1, false))
   state.folds, state.preamble = {}, ''
   for _, b in ipairs(state.blocks) do
     local old = old_at[b.first] or old_source[b.source]
@@ -247,7 +248,7 @@ function M.refresh()
               -- Keep padding when scrolled away so the document does not jump.
               if b.image then b.image:clear(true) end
             else
-              local key = vim.fn.sha256(vim.json.encode({b.source, pixels, size.cell_height, state.preamble, vim.o.background}))
+              local key = vim.fn.sha256(vim.json.encode({b.source, state.language, pixels, size.cell_height, state.preamble, vim.o.background}))
               if b.key ~= key or b.win ~= win or b.row ~= row then
                 clear_image(b); b.key, b.win, b.row = key, win, row
               end
@@ -275,7 +276,7 @@ function M.refresh()
                 if worker then
                   serial = serial + 1; waiting = { id = serial, key = key }
                   vim.fn.chansend(worker, vim.json.encode({
-                    id = serial, source = b.source, width = pixels, theme = vim.o.background,
+                    id = serial, source = b.source, language = state.language, width = pixels, theme = vim.o.background,
                     font_size = math.max(12, size.cell_height * 0.9),
                     base = vim.fn.fnamemodify(api.nvim_buf_get_name(buf), ':h'), preamble = state.preamble,
                   }) .. '\n')
@@ -330,7 +331,7 @@ end
 
 function M.attach(buf)
   if not enabled or M.states[buf] or vim.bo[buf].buftype ~= '' then return end
-  local state = { blocks = {}, folds = {}, tick = 0 }
+  local state = { blocks = {}, folds = {}, tick = 0, language = vim.bo[buf].filetype == 'lean' and 'lean' or 'coq' }
   M.states[buf] = state
   local timer = vim.uv.new_timer()
   state.timer = timer
@@ -393,7 +394,7 @@ end
 function M.setup()
   _G.SFDocsFoldExpr = M.foldexpr
   _G.SFDocsFoldText = M.foldtext
-  api.nvim_create_autocmd('FileType', { pattern = 'coq', callback = function(a) M.attach(a.buf) end })
+  api.nvim_create_autocmd('FileType', { pattern = { 'coq', 'lean' }, callback = function(a) M.attach(a.buf) end })
   api.nvim_create_autocmd({ 'WinScrolled', 'WinResized', 'BufWinEnter', 'CursorMoved' }, {
     callback = schedule_refresh,
   })
