@@ -3,7 +3,7 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { nixpkgs, ... }:
+  outputs = { self, nixpkgs, ... }:
     let
       lib = nixpkgs.lib;
       sfNvimLua = ''
@@ -289,6 +289,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
       packages = forAllSystems (
         pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
+          lean = (import ./nix/lean-trial.nix { inherit pkgs; }).launcher;
           default = sfNvim;
           nvim = sfNvim;
           renderer = docRenderer;
@@ -301,6 +302,17 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
       apps = forAllSystems (
         pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
+          lean = {
+            type = "app";
+            program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.lean}/bin/lean-try";
+          };
+          lean-kitty = {
+            type = "app";
+            program = "${pkgs.writeShellScript "lean-kitty" ''
+              unset TMUX TMUX_PANE
+              exec ${pkgs.kitty}/bin/kitty --title "Lean trial" ${self.packages.${pkgs.stdenv.hostPlatform.system}.lean}/bin/lean-try "$@"
+            ''}";
+          };
           clear-previews = {
             type = "app";
             program = "${pkgs.writeShellScript "sf-clear-previews" ''
@@ -332,6 +344,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
       checks = forAllSystems (
         pkgs: coq: coqPackages: sfNvim: docRenderer: renderPython: tutor:
         {
+          lean = (import ./nix/lean-trial.nix { inherit pkgs; }).check;
           documentation = pkgs.runCommand "sf-documentation-tests" {
             nativeBuildInputs = [ sfNvim docRenderer renderPython coq ];
           } ''
