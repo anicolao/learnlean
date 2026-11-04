@@ -1,12 +1,11 @@
-# Stock Lean in Neovim
+# Lean in Neovim with formatted documentation
 
-This trial runs the upstream `lean.nvim` setup with its suggested mappings and
-normal Infoview. It has no Rocq plugins, tutor, custom theme, proof-panel layout,
-or graphical documentation previews. The existing flake lock supplies Lean
-4.28.0, Neovim 0.11.6, `lean.nvim`, and its dependencies; no host Lean, Lake,
-Elan, or Neovim installation is needed.
+This runs the upstream `lean.nvim` setup with its suggested mappings and normal
+Infoview, plus formatted documentation in the source buffer. The existing flake
+lock supplies Lean 4.28.0, Neovim 0.11.6, the Markdown/PNG renderer, and plugin
+dependencies. No host Lean, Lake, Elan, or Neovim installation is needed.
 
-Run in your current terminal (Kitty and tmux are not required):
+Run in your current terminal (Kitty is needed for graphical previews; other terminals show folded source):
 
 ```sh
 nix run .#lean
@@ -58,3 +57,20 @@ step. See the [upstream plugin](https://github.com/Julian/lean.nvim) for more.
 builds the sample with Lake and starts the actual Lean language server through
 the packaged Neovim. It checks Infoview creation, proof-goal requests, messages,
 and diagnostics after an unsaved invalid edit.
+
+## Formatted source comments
+
+`/-! ... -/` module documentation and `/-- ... -/` declaration documentation
+render as Markdown: headings, emphasis, lists, inline code, and fenced code.
+Ordinary `/- ... -/` and `--` comments stay as source. Verso-specific roles and
+checked documentation extensions are not interpreted by this Markdown preview.
+
+- `zo` opens documentation for editing; `zc` closes it; `za` toggles it.
+- Previews remain still during Insert mode and refresh on Escape, without saving.
+- `zR` opens all documentation; `zM` closes it.
+- `:SFDocsRefresh` rebuilds previews; `:SFDocsDisable` shows the plain source.
+
+The source file contains only Lean text. Palette-based Kitty placeholders work
+in a direct Kitty window or through tmux; RGB support is not required. The Lean
+Infoview and its normal mappings remain available. This launcher still does not
+load the LLM tutor.

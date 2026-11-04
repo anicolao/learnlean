@@ -239,7 +239,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
                 pkgs.coqPackages
               else
                 throw "No Coq package set found in nixpkgs for ${system}";
-            renderPython = pkgs.python3.withPackages (ps: [ ps.weasyprint ps.pillow ps.pynvim ]);
+            renderPython = pkgs.python3.withPackages (ps: [ ps.weasyprint ps.pillow ps.pynvim ps.markdown-it-py ]);
             docRenderer = pkgs.writeShellApplication {
               name = "sf-doc-render";
               runtimeInputs = [ renderPython coq pkgs.poppler-utils ];

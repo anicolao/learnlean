@@ -1,8 +1,28 @@
 { pkgs }:
 let
+  renderPython = pkgs.python3.withPackages (ps: [ ps.weasyprint ps.pillow ps.markdown-it-py ]);
+  renderer = pkgs.writeShellApplication {
+    name = "sf-doc-render";
+    runtimeInputs = [ renderPython pkgs.poppler-utils ];
+    text = ''
+      export FONTCONFIG_FILE="${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; }}"
+      exec ${renderPython}/bin/python ${../prototype/render.py} "$@"
+    '';
+  };
+  docs = pkgs.vimUtils.buildVimPlugin {
+    pname = "sf-docs";
+    version = "0.1.0";
+    src = ../prototype;
+    doCheck = false;
+  };
   base = pkgs.wrapNeovimUnstable pkgs.neovim-unwrapped {
-    plugins = [ pkgs.vimPlugins.lean-nvim ];
+    plugins = [ pkgs.vimPlugins.lean-nvim docs
+      (pkgs.vimPlugins.image-nvim.overrideAttrs (old: {
+        patches = (old.patches or []) ++ [ ../prototype/kitty-transport.patch ];
+      }))
+    ];
     luaRcContent = ''
+      require('sf_docs').setup()
       require('lean').setup { mappings = true }
     '';
     wrapRc = true;
@@ -12,7 +32,7 @@ let
     paths = [ base ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
-      wrapProgram "$out/bin/nvim" --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.lean4 ]}
+      wrapProgram "$out/bin/nvim" --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.lean4 renderer pkgs.tmux ]}
     '';
   };
   launcher = pkgs.writeShellApplication {
@@ -35,7 +55,7 @@ let
 in {
   inherit editor launcher;
   check = pkgs.runCommand "lean-trial-check" {
-    nativeBuildInputs = [ editor pkgs.lean4 ];
+    nativeBuildInputs = [ editor pkgs.lean4 renderer renderPython ];
   } ''
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME" project
@@ -43,6 +63,8 @@ in {
     cp ${../lean-trial/lakefile.toml} project/lakefile.toml
     chmod -R u+w project
     cd project
+    python ${../prototype/tests/test_lean_renderer.py}
+    nvim --headless -c "luafile ${../prototype/tests/test_lean_docs.lua}"
     lake build
     nvim --headless Main.lean -c "luafile ${../lean-trial/check.lua}"
     touch "$out"

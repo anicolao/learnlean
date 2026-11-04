@@ -62,7 +62,7 @@ The bridge uses the CLI's [app-server interface](https://developers.openai.com/c
 
 ## Current scope
 
-Tutoring edits support both Rocq and Lean 4. **Graphical documentation previews and interactive prover integration remain Rocq-only.** Lean files receive ordinary Lean documentation comments and code; this prototype does not yet bundle Lean, its language server, or Lean comment rendering. The tutor is not supplied live prover results and must not claim its edits have been checked. Use Coqtail to inspect Rocq exercises normally.
+Tutoring edits support both Rocq and Lean 4. The separate `.#lean` and `.#lean-kitty` launchers provide Lean, its standard Infoview, and Markdown documentation previews, but do not yet load this tutor. The Rocq launcher continues to provide the integrated tutor experience. The tutor is not supplied live prover results and must not claim its edits have been checked. Use Coqtail to inspect Rocq exercises normally.
 
 The older design documents explore a larger event-sourced application. This implementation follows the simpler file-only course model: `.v`/`.lean` content plus the system prompt, with disposable runtime state.
 

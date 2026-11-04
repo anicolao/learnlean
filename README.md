@@ -14,9 +14,9 @@ Use **Space t a** or `:TutorAsk` to ask the tutor for explanations, exercises, o
 
 The broader learning environment below remains an earlier design proposal. The implemented tutor uses the proof file as the sole durable course record, with no additional session metadata.
 
-## Try stock Lean support
+## Try Lean support
 
-A separate, uncustomized `lean.nvim` trial is available with `nix run .#lean`, or
+A separate `lean.nvim` launcher with formatted Lean documentation is available with `nix run .#lean`, or
 `nix run .#lean-kitty` for a new Kitty window. With no filename it creates a writable
 example project and opens the standard Infoview. See the [Lean trial guide](lean-trial/README.md).
 
