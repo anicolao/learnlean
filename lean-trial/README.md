@@ -14,6 +14,8 @@ nix run .#kitty -- path/to/Main.lean
 
 The `.lean` extension selects this environment; `.v` selects Rocq. Selection
 happens when starting the editor, so use separate sessions for the two languages.
+Files in a Lake project use `lake serve`; standalone files use `lean --server`
+directly, without requiring or creating a Lake configuration.
 
 To create a fresh sample, run in your current terminal (Kitty is needed for graphical previews; other terminals show folded source):
 
