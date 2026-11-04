@@ -1,6 +1,7 @@
 { pkgs }:
 let
-  renderPython = pkgs.python3.withPackages (ps: [ ps.weasyprint ps.pillow ps.markdown-it-py ]);
+  tutor = import ./tutor.nix { inherit pkgs; };
+  renderPython = pkgs.python3.withPackages (ps: [ ps.weasyprint ps.pillow ps.markdown-it-py ps.pynvim ]);
   renderer = pkgs.writeShellApplication {
     name = "sf-doc-render";
     runtimeInputs = [ renderPython pkgs.poppler-utils ];
@@ -22,7 +23,9 @@ let
       }))
     ];
     luaRcContent = ''
+      vim.g.mapleader = ' '
       require('sf_docs').setup()
+      require('sf_tutor').setup()
       require('sf_lean').setup()
       require('lean').setup { mappings = true }
     '';
@@ -33,7 +36,7 @@ let
     paths = [ base ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
-      wrapProgram "$out/bin/nvim" --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.lean4 renderer pkgs.tmux ]}
+      wrapProgram "$out/bin/nvim" --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.lean4 renderer tutor pkgs.tmux ]}
     '';
   };
   launcher = pkgs.writeShellApplication {
@@ -64,6 +67,7 @@ in {
     cp ${../lean-trial/lakefile.toml} project/lakefile.toml
     chmod -R u+w project
     cd project
+    SF_TEST_LEAN_TUTOR=1 python ${../prototype/tests/test_tutor_editor.py}
     python ${../prototype/tests/test_lean_renderer.py}
     nvim --headless -c "luafile ${../prototype/tests/test_lean_docs.lua}"
     lake build

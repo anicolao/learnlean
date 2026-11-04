@@ -1,6 +1,12 @@
 local function main()
   assert(vim.bo.filetype == 'lean')
-  assert(vim.fn.exists(':TutorAsk') == 0, 'trial must be independent of tutor setup')
+  assert(vim.fn.exists(':TutorAsk') == 2, 'Lean tutor command missing')
+  assert(vim.fn.maparg(' ta', 'n'):find('TutorAsk', 1, true), 'Space t a must open the tutor')
+  assert(vim.fn.executable('sf-tutor') == 1, 'Packaged tutor missing')
+  local prompt
+  vim.ui.input = function(opts) prompt = opts.prompt end
+  vim.cmd('TutorAsk')
+  assert(prompt == 'Ask the tutor: ', 'Tutor dialog did not open')
   local client
   assert(vim.wait(30000, function()
     client = vim.lsp.get_clients({ name = 'leanls', bufnr = 0 })[1]

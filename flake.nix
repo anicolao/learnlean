@@ -248,14 +248,7 @@ hi PmenuThumb   ctermfg=NONE ctermbg=10   cterm=NONE
                 exec ${renderPython}/bin/python ${./prototype/render.py} "$@"
               '';
             };
-            tutor = pkgs.writeShellApplication {
-              name = "sf-tutor";
-              runtimeInputs = [ renderPython pkgs.codex ];
-              text = ''
-                export SF_CODEX_BIN="${pkgs.codex}/bin/codex"
-                exec ${renderPython}/bin/python ${./prototype}/tutor.py "$@"
-              '';
-            };
+            tutor = import ./nix/tutor.nix { inherit pkgs; };
             docPlugin = pkgs.vimUtils.buildVimPlugin {
               pname = "sf-docs";
               version = "0.1.0";

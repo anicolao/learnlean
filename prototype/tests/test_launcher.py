@@ -31,14 +31,16 @@ class LauncherTest(unittest.TestCase):
     def test_packaged_editors(self):
         nvim=os.environ['SF_TEST_EDITOR']
         with tempfile.TemporaryDirectory() as folder:
+            home = Path(folder) / 'home'
+            home.mkdir()
             for name,code in [
-                ('course file.lean', "assert(vim.bo.filetype=='lean');assert(vim.fn.exists(':LeanInfoviewToggle')==2);assert(vim.fn.exists(':TutorAsk')==0)"),
+                ('course file.lean', "assert(vim.bo.filetype=='lean');assert(vim.fn.exists(':LeanInfoviewToggle')==2);assert(vim.fn.exists(':TutorAsk')==2);assert(vim.fn.maparg(' ta','n'):find('TutorAsk',1,true))"),
                 ('course file.v', "assert(vim.bo.filetype=='coq');assert(vim.fn.exists(':TutorAsk')==2);assert(vim.fn.exists(':LeanInfoviewToggle')==0)"),
             ]:
                 path=Path(folder)/name
                 path.write_text('')
-                subprocess.run([nvim,'--headless',str(path),'-c','lua '+code,'-c','qa!'],
-                               env=dict(os.environ,SF_DOC_TEST='1'),check=True,timeout=30)
+                subprocess.run([nvim,'--headless',str(path),'-c','lua local ok,err=pcall(function() '+code+' end); if not ok then print(err); vim.cmd("cquit 1") end','-c','qa!'],
+                               env=dict(os.environ,SF_DOC_TEST='1',HOME=str(home)),check=True,timeout=30)
             mixed=subprocess.run([nvim,'a.v','b.lean'],capture_output=True,text=True,timeout=10)
             self.assertEqual(mixed.returncode,2)
             self.assertIn('separate',mixed.stderr)
