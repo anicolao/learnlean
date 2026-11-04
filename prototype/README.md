@@ -8,7 +8,7 @@ From the repository root, with Nix flakes enabled:
 nix run . -- lf/Basics.v
 ```
 
-This runs the pinned Neovim in your **current terminal or tmux pane**. Use Kitty for graphical previews. The first run downloads or builds dependencies. `nix run .#nvim -- lf/Basics.v` is an equivalent explicit command.
+This runs the pinned Rocq Neovim in your **current terminal or tmux pane**. Passing a `.lean` filename selects the Lean environment instead, including with `.#kitty` or `.#nvim`. Use Kitty for graphical previews. The first run downloads or builds dependencies. `nix run .#nvim -- lf/Basics.v` is an equivalent explicit command.
 
 For tmux, graphics passthrough must already be enabled. The plugin uses image.nvim's tmux support and hides previews when switching tmux windows. The [upstream configuration recommendations](https://github.com/3rd/image.nvim#tmux) are:
 

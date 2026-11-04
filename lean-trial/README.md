@@ -5,7 +5,17 @@ Infoview, plus formatted documentation in the source buffer. The existing flake
 lock supplies Lean 4.28.0, Neovim 0.11.6, the Markdown/PNG renderer, and plugin
 dependencies. No host Lean, Lake, Elan, or Neovim installation is needed.
 
-Run in your current terminal (Kitty is needed for graphical previews; other terminals show folded source):
+Open an existing file with the main launcher (or `.#kitty` for a new window):
+
+```sh
+nix run . -- path/to/Main.lean
+nix run .#kitty -- path/to/Main.lean
+```
+
+The `.lean` extension selects this environment; `.v` selects Rocq. Selection
+happens when starting the editor, so use separate sessions for the two languages.
+
+To create a fresh sample, run in your current terminal (Kitty is needed for graphical previews; other terminals show folded source):
 
 ```sh
 nix run .#lean

@@ -2,15 +2,22 @@
 
 A local, conversational environment for learning Lean 4. An LLM tutor shapes a personal learning path, presents concepts and exercises inside the dialogue, and helps the learner inspect real Lean proof states while working in their preferred editor.
 
-**Current implementation: a Neovim-first Rocq prototype with a file-writing Codex tutor.** The copied Software Foundations LF book runs with the existing Rocq/Coqtail setup, extended with folded documentation and live graphical previews in Kitty. Open a comment, edit its plain text, and its preview updates without saving.
+**Current implementation: Neovim environments for Rocq and Lean, with formatted documentation and a file-writing Codex tutor in the Rocq environment.** The copied Software Foundations LF book runs with the existing Rocq/Coqtail setup, extended with folded documentation and live graphical previews in Kitty. Open a comment, edit its plain text, and its preview updates without saving.
 
 ```sh
 nix run . -- lf/Basics.v
+nix run . -- course.lean
 ```
 
-This runs in your current Kitty terminal or tmux pane. Use `zo` to edit documentation, `zc` to collapse it, and `Space c j` to check the next Rocq sentence. See the [prototype guide](prototype/README.md) for setup, controls, implementation, and limitations. Validate with `nix flake check`.
+The launcher selects the Lean environment for `.lean` files and the Rocq
+environment for `.v` files. It runs in your current terminal; Kitty is needed
+for graphical documentation. `nix run .#kitty -- course.lean` starts a new Kitty
+window and uses the same selection. With no recognized filename, it opens the
+Rocq environment as before. Open Lean and Rocq files in separate sessions.
 
-Use **Space t a** or `:TutorAsk` to ask the tutor for explanations, exercises, or critiques. It edits and saves the current `.v` or `.lean` file using the Nix-packaged Codex CLI and your existing login. See the [tutor guide](prototype/TUTOR.md). Graphical previews and prover integration currently support Rocq.
+For Rocq, use `zo` to edit documentation, `zc` to collapse it, and `Space c j` to check the next Rocq sentence. See the [prototype guide](prototype/README.md) for setup, controls, implementation, and limitations. Validate with `nix flake check`.
+
+Use **Space t a** or `:TutorAsk` to ask the tutor for explanations, exercises, or critiques. It edits and saves the current `.v` or `.lean` file using the Nix-packaged Codex CLI and your existing login. See the [tutor guide](prototype/TUTOR.md). Both environments support graphical documentation and their respective prover integration; the Lean launcher does not yet load the tutor.
 
 The broader learning environment below remains an earlier design proposal. The implemented tutor uses the proof file as the sole durable course record, with no additional session metadata.
 
