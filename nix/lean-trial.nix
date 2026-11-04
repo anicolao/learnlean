@@ -23,6 +23,7 @@ let
     ];
     luaRcContent = ''
       require('sf_docs').setup()
+      require('sf_lean').setup()
       require('lean').setup { mappings = true }
     '';
     wrapRc = true;
@@ -66,6 +67,12 @@ in {
     python ${../prototype/tests/test_lean_renderer.py}
     nvim --headless -c "luafile ${../prototype/tests/test_lean_docs.lua}"
     lake build
+    nvim --headless Main.lean -c "luafile ${../lean-trial/check.lua}"
+    # Exercise standalone files both inside a Git root and without any root marker.
+    rm lakefile.toml
+    mkdir .git
+    nvim --headless Main.lean -c "luafile ${../lean-trial/check.lua}"
+    rmdir .git
     nvim --headless Main.lean -c "luafile ${../lean-trial/check.lua}"
     touch "$out"
   '';

@@ -6,6 +6,17 @@ local function main()
     client = vim.lsp.get_clients({ name = 'leanls', bufnr = 0 })[1]
     return client and client.initialized
   end, 100), 'Lean language server did not initialize')
+  -- Check the selected process too: Lake's fallback would otherwise make the
+  -- standalone goals/diagnostics checks pass despite the startup warning.
+  local start, command = vim.lsp.rpc.start
+  vim.lsp.rpc.start = function(cmd) command = cmd end
+  local started, err = pcall(client.config.cmd, {}, client.config)
+  vim.lsp.rpc.start = start
+  assert(started, err)
+  local root = client.config.root_dir
+  local is_project = vim.uv.fs_stat(root .. '/lakefile.toml')
+    or vim.uv.fs_stat(root .. '/lakefile.lean')
+  assert(command[1] == (is_project and 'lake' or 'lean'), vim.inspect(command))
   assert(vim.wait(30000, function()
     return #vim.diagnostic.get(0) > 0
   end, 100), 'Expected #check/#eval messages')
@@ -27,7 +38,7 @@ local function main()
   assert(vim.wait(30000, function()
     return #vim.diagnostic.get(buf,{severity=vim.diagnostic.severity.ERROR})>0
   end,100), 'Unsaved invalid proof did not produce an error')
-  print('Lean trial: LSP, live goals, default Infoview, messages and unsaved diagnostics passed')
+  print('Lean trial: ' .. command[1] .. ', LSP, live goals, default Infoview, messages and unsaved diagnostics passed')
 end
 local ok,err=xpcall(main,debug.traceback)
 if not ok then io.stderr:write(err..'\n');vim.cmd('cquit 1') else vim.cmd('qa!') end
