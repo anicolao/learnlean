@@ -14,6 +14,12 @@ Use **Space t a** or `:TutorAsk` to ask the tutor for explanations, exercises, o
 
 The broader learning environment below remains an earlier design proposal. The implemented tutor uses the proof file as the sole durable course record, with no additional session metadata.
 
+## Try stock Lean support
+
+A separate, uncustomized `lean.nvim` trial is available with `nix run .#lean`, or
+`nix run .#lean-kitty` for a new Kitty window. With no filename it creates a writable
+example project and opens the standard Infoview. See the [Lean trial guide](lean-trial/README.md).
+
 ## The experience
 
 Start with a question or a learning goal: “I can program, but I don't understand proofs.” The tutor chooses a small exercise, presents it in chat, and opens the assignment in an embedded Neovim terminal. Edit normally, inspect hypotheses and goals at a selected proof step, and discuss the result. The tutor can offer a different explanation, revisit a prerequisite, or introduce a new challenge based on that exchange.

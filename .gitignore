@@ -15,3 +15,6 @@ __pycache__/
 .*.aux
 .lia.cache
 .nia.cache
+
+# Writable projects created by the standalone Lean trial.
+lean-trial.*/

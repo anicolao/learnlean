@@ -1,0 +1,6 @@
+name = "lean_trial"
+version = "0.1.0"
+defaultTargets = ["Main"]
+
+[[lean_lib]]
+name = "Main"
