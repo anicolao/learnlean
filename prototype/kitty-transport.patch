@@ -1,0 +1,31 @@
+--- a/lua/image/backends/kitty/helpers.lua
++++ b/lua/image/backends/kitty/helpers.lua
+@@ -6,8 +6,10 @@
+ -- Allow for loop to be used on older versions
+ if not uv then uv = vim.loop end
+ 
+-local stdout = vim.loop.new_tty(1, false)
+-if not stdout then error("failed to open stdout") end
++-- Graphics commands must remain ordered even when tmux routes a deletion to
++-- another pane tty. A queued uv.write can otherwise arrive after that deletion.
++-- Flush every command, including VimLeavePre cleanup, before returning.
++local stdout = assert(io.open("/dev/fd/1", "w"), "failed to open graphics tty")
+ 
+ local is_SSH = (vim.env.SSH_CLIENT ~= nil) or (vim.env.SSH_TTY ~= nil)
+ 
+@@ -33,11 +35,13 @@
+   if tty then
+     local handle = io.open(tty, "w")
+     if not handle then error("failed to open tty") end
+-    handle:write(payload)
++    assert(handle:write(payload))
++    assert(handle:flush())
+     handle:close()
+   else
+     -- vim.fn.chansend(vim.v.stderr, payload)
+-    stdout:write(payload)
++    assert(stdout:write(payload))
++    assert(stdout:flush())
+   end
+ end
+ 

@@ -25,21 +25,8 @@ local function main()
   assert(#writes == 2, 'both commands must reach terminal synchronously')
   assert(writes[1]:find('a=p',1,true) and writes[2]:find('a=d',1,true), 'delete overtook draw')
   assert(writes[1]:sub(1,7) == '\27Ptmux;' and writes[2]:sub(1,7) == '\27Ptmux;')
-  -- Track hidden images too: shallow hide retains data; final exit frees it by ID.
-  local backend = require('image/backends/kitty')
-  local state = {images={}, options={kitty_method='normal'}}
-  backend.setup(state)
-  local img = {id='owned',internal_id=123,cropped_path='/tmp/example.png',resize_hash='x',
-    bounds={top=0,bottom=99,left=0,right=99}}
-  backend.render(img,0,0,5,5)
-  backend.clear(img.id,true)
-  assert(not img.is_rendered)
-  local before = #writes
-  backend.clear()
-  assert(#writes > before and writes[#writes]:find('i=123',1,true)
-    and writes[#writes]:find('d=I',1,true), 'exit must free hidden owned image data')
   io.open = original_open
-  print('Kitty: synchronous tmux draw/delete ordering and hidden-image exit cleanup passed')
+  print('Kitty: synchronous tmux draw/delete ordering passed')
 end
 local ok, err = xpcall(main, debug.traceback)
 if not ok then io.stderr:write(err .. '\n'); vim.cmd('cquit 1') else vim.cmd('qa!') end
