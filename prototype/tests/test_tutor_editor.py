@@ -27,11 +27,14 @@ for line in sys.stdin:
  with open(os.environ['TUTOR_TEST_LOG'],'a') as f: f.write(line)
  if r.get('op')=='commit': continue
  time.sleep(.3)
- print(json.dumps({'id':r['id'],'source':r['source']+'\\n(** Tutor: Unicode α exercise. *)\\n'}),flush=True)
+ note = '/-! Tutor: Unicode α exercise. -/' if r['language'] == 'Lean 4' else '(** Tutor: Unicode α exercise. *)'
+ print(json.dumps({'id':r['id'],'source':r['source']+'\\n'+note+'\\n'}),flush=True)
 ''')
         worker.chmod(0o755)
-        file = root / 'course.v'
-        file.write_text('Check nat.\n')
+        lean_start = os.environ.get('SF_TEST_LEAN_TUTOR') == '1'
+        initial = '#check Nat' if lean_start else 'Check nat.'
+        file = root / ('course.lean' if lean_start else 'course.v')
+        file.write_text(initial + '\n')
         os.environ['SF_DOC_TEST'] = '1'
         n = pynvim.attach('child', argv=['nvim', '--embed', '--headless', str(file)])
         try:
@@ -42,7 +45,7 @@ for line in sys.stdin:
             wait(lambda: n.exec_lua('return require("sf_tutor").sessions[vim.api.nvim_get_current_buf()].pending == nil'))
             wait(lambda: '"commit"' in (root / 'requests').read_text())
             assert 'Learner question' in file.read_text() and 'Teach me about α' in file.read_text()
-            assert file.read_text().startswith('Check nat.')
+            assert file.read_text().startswith(initial)
             n.command('undo')
             assert 'Tutor: Unicode' not in '\n'.join(n.current.buffer[:])
             assert 'Teach me about α' in '\n'.join(n.current.buffer[:]), 'reply must be one distinct undo change'
@@ -74,7 +77,7 @@ for line in sys.stdin:
             assert 'Course saved, but a post-save hook failed' in n.vars['tutor_last_notice']
             n.exec_lua('vim.api.nvim_del_autocmd(vim.g.tutor_bad_hook)')
             # Lean uses native Lean comments, with no extra course files.
-            lean = root / 'course.lean'
+            lean = root / 'second.lean'
             n.command('edit ' + str(lean))
             n.command('TutorAsk Explain natural numbers')
             wait(lambda: lean.exists() and 'Tutor: Unicode' in lean.read_text())

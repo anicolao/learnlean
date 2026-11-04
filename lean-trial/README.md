@@ -84,5 +84,9 @@ checked documentation extensions are not interpreted by this Markdown preview.
 
 The source file contains only Lean text. Palette-based Kitty placeholders work
 in a direct Kitty window or through tmux; RGB support is not required. The Lean
-Infoview and its normal mappings remain available. This launcher still does not
-load the LLM tutor.
+Infoview and its normal mappings remain available.
+
+In the source buffer, press `Space t a` in Normal mode (or run `:TutorAsk`) to
+ask the assistant. It uses the same Nix-packaged Codex and saved login as Rocq,
+and writes explanations and exercises into your `.lean` file. Use `:TutorCancel`
+to cancel a request. Lean’s proof-navigation local leader remains backslash.
