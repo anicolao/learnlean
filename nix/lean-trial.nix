@@ -28,6 +28,7 @@ let
       require('sf_tutor').setup()
       require('sf_lean').setup()
       require('lean').setup { mappings = true }
+      require('sf_lean_navigation').setup()
     '';
     wrapRc = true;
   };
@@ -70,6 +71,7 @@ in {
     SF_TEST_LEAN_TUTOR=1 python ${../prototype/tests/test_tutor_editor.py}
     python ${../prototype/tests/test_lean_renderer.py}
     nvim --headless -c "luafile ${../prototype/tests/test_lean_docs.lua}"
+    nvim --headless -c "luafile ${../prototype/tests/test_lean_navigation.lua}"
     lake build
     nvim --headless Main.lean -c "luafile ${../lean-trial/check.lua}"
     # Exercise standalone files both inside a Git root and without any root marker.

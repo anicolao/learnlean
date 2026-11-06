@@ -63,6 +63,21 @@ by our Rocq prototype:
 Lean rechecks changes automatically; there is no Rocq-style sentence execution
 step. See the [upstream plugin](https://github.com/Julian/lean.nvim) for more.
 
+In Normal mode, **Option–Down/Up** (Alt on other keyboards) inspect the next or
+previous code line; **Space c j / Space c k** are equivalent. Forward navigation
+first finishes the current line, then moves onward, skipping blank lines and
+comments. The cursor lands immediately after the code so the Infoview shows the
+goals after that line. Stepping opens and resumes the Infoview if needed.
+Counts work, for example `3<Alt-Down>`.
+
+The highlighted line and `▶` gutter marker identify the source position being
+inspected, not a successfully checked prefix. Lean still checks the entire file
+asynchronously and reports errors normally. This is code-line navigation: a
+multiline tactic has multiple stops, and tactics sharing a line have one stop.
+The marker follows ordinary cursor movement and disappears while inserting text.
+It uses your theme's `DiffAdd` highlight; customize it with
+`:highlight SFLeanPosition ctermbg=2 ctermfg=0` if desired.
+
 ## Validation
 
 `nix build .#checks.aarch64-darwin.lean` (replace the system as appropriate)
@@ -78,6 +93,8 @@ Ordinary `/- ... -/` and `--` comments stay as source. Verso-specific roles and
 checked documentation extensions are not interpreted by this Markdown preview.
 
 - `zo` opens documentation for editing; `zc` closes it; `za` toggles it.
+- `j`/`k` treat a closed preview as one stop, skipping its hidden source. Opened
+  documentation remains navigable line by line. This also applies in Rocq.
 - Previews remain still during Insert mode and refresh on Escape, without saving.
 - `zR` opens all documentation; `zM` closes it.
 - `:SFDocsRefresh` rebuilds previews; `:SFDocsDisable` shows the plain source.

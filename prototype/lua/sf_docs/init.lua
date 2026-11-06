@@ -329,6 +329,33 @@ function M.all(open)
   schedule_refresh()
 end
 
+-- conceal_lines hides pixels, but unlike a native fold it does not change j/k.
+-- Keep the preview's first line reachable (zo), skipping its hidden source.
+function M.move(direction, count)
+  local buf = api.nvim_get_current_buf()
+  if not enabled then
+    vim.cmd('normal! ' .. (count or vim.v.count1) .. (direction > 0 and 'j' or 'k'))
+    return
+  end
+  local state = M.states[buf]
+  if state and state.dirty then rebuild(buf) end
+  for _ = 1, count or vim.v.count1 do
+    vim.cmd('normal! ' .. (direction > 0 and 'j' or 'k'))
+    local pos = api.nvim_win_get_cursor(0)
+    if state then
+      for _, b in ipairs(state.blocks) do
+        if b.standalone and not b.open and pos[1] > b.first and pos[1] <= b.last then
+          pos[1] = direction > 0 and math.min(b.last + 1, api.nvim_buf_line_count(buf)) or b.first
+          -- A final preview has no following source line: stay on its anchor.
+          if pos[1] <= b.last then pos[1] = b.first end
+          api.nvim_win_set_cursor(0, pos)
+          break
+        end
+      end
+    end
+  end
+end
+
 function M.attach(buf)
   if not enabled or M.states[buf] or vim.bo[buf].buftype ~= '' then return end
   local state = { blocks = {}, folds = {}, tick = 0, language = vim.bo[buf].filetype == 'lean' and 'lean' or 'coq' }
@@ -358,6 +385,8 @@ function M.attach(buf)
   end
   vim.keymap.set('n', 'zR', function() M.all(true) end, { buffer = buf })
   vim.keymap.set('n', 'zM', function() M.all(false) end, { buffer = buf })
+  vim.keymap.set('n', 'j', function() M.move(1) end, { buffer = buf, desc = 'Down past closed documentation' })
+  vim.keymap.set('n', 'k', function() M.move(-1) end, { buffer = buf, desc = 'Up past closed documentation' })
   vim.keymap.set('n', '<LeftMouse>', function()
     local mouse = vim.fn.getmousepos()
     if mouse.winid ~= 0 and api.nvim_win_get_buf(mouse.winid) == buf then
