@@ -28,7 +28,7 @@ Closing and reopening the file starts a fresh conversation using its contents. T
 
 ## Codex connection
 
-The flake supplies **Codex CLI**, pinned by version and content hash in `nix/codex.nix`, and the tutor invokes its absolute Nix-store path. No host `codex` installation or `PATH` entry is needed. Your existing Codex authentication and model configuration are reused. To log in or check authentication with the same packaged executable:
+The flake supplies **Codex CLI**, pinned by version and content hash in `nix/codex.nix`, and the tutor invokes its absolute Nix-store path. No host `codex` installation or `PATH` entry is needed. Your existing Codex authentication is reused. By default, the tutor queries Codex’s available model catalog and explicitly selects its recommended default for the current client/account (or the first visible text model if no default is marked). It does not inherit the model in your global Codex configuration, which may be unsupported by your login. `SF_TUTOR_MODEL` explicitly overrides this selection. To log in or check authentication with the same packaged executable:
 
 ```sh
 nix run .#codex -- login

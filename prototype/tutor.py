@@ -110,13 +110,41 @@ class Codex:
                 return event['result']
             self.deferred.append(event)
 
+    def model(self):
+        override = os.environ.get('SF_TUTOR_MODEL', '').strip()
+        if override:
+            return override
+        # Do not inherit config.toml's model: it may belong to a different
+        # client/account (e.g. an API-only model with a ChatGPT login).
+        cursor, first, seen = None, None, set()
+        while True:
+            params = {'includeHidden': False}
+            if cursor:
+                params['cursor'] = cursor
+            page = self.rpc('model/list', params)
+            for model in page.get('data', []):
+                name = model.get('model')
+                if not name or model.get('hidden') or 'text' not in model.get('inputModalities', ['text']):
+                    continue
+                first = first or name
+                if model.get('isDefault'):
+                    return name
+            cursor = page.get('nextCursor')
+            if not cursor:
+                break
+            if cursor in seen:
+                raise RuntimeError('Codex returned a repeated model-list cursor')
+            seen.add(cursor)
+        if first:
+            return first
+        raise RuntimeError('Codex listed no available text models. Check your Codex login or set SF_TUTOR_MODEL explicitly.')
+
     def start(self, cwd):
         params = {'cwd': cwd, 'ephemeral': True, 'sandbox': 'read-only',
                   'approvalPolicy': 'never',
                   'baseInstructions': Path(__file__).with_name('prompts').joinpath('tutor.md').read_text(),
                   'config': {'project_doc_max_bytes': 0}}
-        if os.environ.get('SF_TUTOR_MODEL'):
-            params['model'] = os.environ['SF_TUTOR_MODEL']
+        params['model'] = self.model()
         return self.rpc('thread/start', params)['thread']['id']
 
     def turn(self, thread, text):
