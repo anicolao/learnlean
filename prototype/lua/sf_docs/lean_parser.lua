@@ -5,8 +5,13 @@ function M.scan(lines)
   local text = table.concat(lines, '\n')
   local blocks, i, row, col, depth, start = {}, 1, 1, 0, 0, nil
   local quoted, raw_end
-  local function advance(n)
+  local code = {}
+  local function advance(n, is_code)
     for _ = 1, n do
+      if is_code and not text:sub(i,i):match('%s') then
+        code[row] = code[row] or { first = col, last = col }
+        code[row].last = col
+      end
       if text:sub(i,i) == '\n' then row, col = row + 1, 0 else col = col + 1 end
       i = i + 1
     end
@@ -37,13 +42,13 @@ function M.scan(lines)
         end
       else advance(1) end
     elseif raw_end then
-      if text:sub(i,i+#raw_end-1) == raw_end then advance(#raw_end); raw_end=nil
-      else advance(1) end
+      if text:sub(i,i+#raw_end-1) == raw_end then advance(#raw_end, true); raw_end=nil
+      else advance(1, true) end
     elseif quoted then
-      if quoted == '"' and char == '\\' then advance(math.min(2,#text-i+1))
-      elseif text:sub(i,i+#quoted-1) == quoted then advance(#quoted); quoted=nil
-      else advance(1) end
-    elseif literal then advance(#literal)
+      if quoted == '"' and char == '\\' then advance(math.min(2,#text-i+1), true)
+      elseif text:sub(i,i+#quoted-1) == quoted then advance(#quoted, true); quoted=nil
+      else advance(1, true) end
+    elseif literal then advance(#literal, true)
     elseif pair == '--' then
       while i <= #text and text:sub(i,i) ~= '\n' do advance(1) end
     elseif pair == '/-' then
@@ -51,11 +56,11 @@ function M.scan(lines)
       depth=1; advance(2)
     elseif char == 'r' and text:sub(i):match('^r#*"') then
       local opener=text:sub(i):match('^r#*"')
-      raw_end='"' .. opener:sub(2,-2); advance(#opener)
-    elseif char == '"' then quoted='"'; advance(1)
-    elseif text:sub(i,i+1) == '«' then quoted='»'; advance(2)
-    else advance(1) end
+      raw_end='"' .. opener:sub(2,-2); advance(#opener, true)
+    elseif char == '"' then quoted='"'; advance(1, true)
+    elseif text:sub(i,i+1) == '«' then quoted='»'; advance(2, true)
+    else advance(1, true) end
   end
-  return blocks, {}
+  return blocks, {}, code
 end
 return M
